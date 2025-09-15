@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toko Diamond — Free Fire (Demo)</title>
+  <meta name="description" content="Demo aplikasi tempat membeli diamond Free Fire — simulasi. Untuk pembelian sesungguhnya, gunakan toko resmi." />
+  <style>
+    :root{
+      --bg: #0b0b10;
+      --card: #0f1720;
+      --muted: #ffffff;
+      --accent: #ffd310b7;
+      --glass: rgba(247, 17, 17, 0.04);
+      --radius:12px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#05060a 0%, #0e1116 60%);
+      color:#e6eef6;
+      padding:20px;
+    }
+    .app{max-width:1100px;margin:0 auto;display:grid;gap:18px;}
+    header{display:flex;align-items:center;gap:14px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#ff9f00,#ffcc00);display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b0b10;font-size:18px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+    main{display:grid;grid-template-columns: 1fr 360px;gap:18px;margin-top:8px;}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:var(--radius);padding:16px;}
+    .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+    .product{background:var(--card);padding:12px;border-radius:10px;}
+    .product .title{font-weight:700}
+    .product .meta{color:var(--muted);font-size:13px}
+    .btn{background:var(--accent);color:#08121a;padding:8px 10px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+    .btn.small{padding:6px 8px;font-size:13px}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(255,204,0,0.12)}
+    input,select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#fff}
+    label{font-size:13px;margin-top:8px;display:block;color:var(--muted)}
+    footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}
+    @media(max-width:980px){main{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">DD</div>
+      <div>
+        <h1>Toko Diamond — Free Fire </h1>
+        <p class="lead">Simulasi pembelian diamond. Untuk transaksi asli, gunakan toko resmi.</p>
+      </div>
+    </header>
+
+    <main>
+      <!-- PRODUCTS -->
+      <section class="card">
+        <h2 style="margin:0;font-size:16px">Paket Diamond</h2>
+        <div id="products" class="products" style="margin-top:12px"></div>
+      </section>
+
+      <!-- CART & CHECKOUT -->
+      <aside class="card">
+        <h3 style="margin:0 0 10px 0">Keranjang</h3>
+        <div id="cartList"><div class="muted">Keranjang kosong</div></div>
+
+        <div class="summary">
+          <div class="row"><div class="muted">Subtotal</div><div id="subtotal">0 IDR</div></div>
+          <div class="row"><div class="muted">Biaya Admin</div><div id="fee">0 IDR</div></div>
+          <div class="row" style="font-weight:800;font-size:16px"><div>Total</div><div id="total">0 IDR</div></div>
+        </div>
+
+        <!-- FORM ID & Pembayaran -->
+        <div style="margin-top:12px">
+          <label for="playerId">ID Free Fire</label>
+          <input type="text" id="playerId" placeholder="contoh: 123456789">
+          <label for="payment">Metode Pembayaran</label>
+          <select id="payment">
+            <option value="">-- Pilih --</option>
+            <option value="gopay">GoPay</option>
+            <option value="ovo">OVO</option>
+            <option value="dana">DANA</option>
+            <option value="pulsa">Pulsa</option>
+          </select>
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn" id="checkoutBtn">Checkout</button>
+          <button class="btn ghost" id="clearCartBtn">Kosongkan</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      &copy; <span id="year"></span> Demo App • Data hanya tersimpan di browser.
+    </footer>
+  </div>
+
+  <script>
+    const PACKAGES = [
+      { id:'d1', gems:60, price:0 },
+      { id:'d2', gems:300, price:0 },
+      { id:'d3', gems:600, price:0 },
+      { id:'d4', gems:800, price:0 },
+      { id:'d5', gems:1100, price:0 },
+      { id:'d6', gems:1500, price:0 },
+      { id:'d7', gems:2000, price:0 }
+    ];
+    const productsEl = document.getElementById('products');
+    const cartListEl = document.getElementById('cartList');
+    const subtotalEl = document.getElementById('subtotal');
+    const feeEl = document.getElementById('fee');
+    const totalEl = document.getElementById('total');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const clearCartBtn = document.getElementById('clearCartBtn');
+    const playerIdEl = document.getElementById('playerId');
+    const paymentEl = document.getElementById('payment');
+    const yearEl = document.getElementById('year');
+    yearEl.textContent = new Date().getFullYear();
+
+    let cart=[];
+
+    function formatIDR(v){ return v.toLocaleString('id-ID')+' IDR'; }
+    function recalc(){
+      const subtotal = cart.reduce((s,i)=>s+i.price,0);
+      const fee = Math.round(subtotal*0.02);
+      subtotalEl.textContent=formatIDR(subtotal);
+      feeEl.textContent=formatIDR(fee);
+      totalEl.textContent=formatIDR(subtotal+fee);
+    }
+    function renderProducts(){
+      productsEl.innerHTML='';
+      for(const p of PACKAGES){
+        const div=document.createElement('div');div.className='product';
+        div.innerHTML=`<div class="title">${p.gems} Diamonds</div><div class="meta">${formatIDR(p.price)}</div><button class="btn small" data-add="${p.id}">Tambah</button>`;
+        productsEl.appendChild(div);
+      }
+    }
+    function renderCart(){
+      cartListEl.innerHTML='';
+      if(cart.length===0){cartListEl.innerHTML='<div class="muted">Keranjang kosong</div>';return;}
+      cart.forEach(item=>{
+        const div=document.createElement('div');
+        div.textContent=`${item.gems} Diamonds - ${formatIDR(item.price)}`;
+        cartListEl.appendChild(div);
+      });
+      recalc();
+    }
+    function addToCart(id){
+      const p=PACKAGES.find(x=>x.id===id);
+      if(p){cart.push(p);renderCart();}
+    }
+    productsEl.addEventListener('click',e=>{
+      if(e.target.dataset.add){addToCart(e.target.dataset.add);}
+    });
+    checkoutBtn.addEventListener('click',()=>{
+      if(cart.length===0)return alert('Keranjang kosong');
+      if(!playerIdEl.value.trim()) return alert('Masukkan ID Free Fire!');
+      if(!paymentEl.value) return alert('Pilih metode pembayaran!');
+      alert(`Checkout sukses (simulasi)\nID: ${playerIdEl.value}\nMetode: ${paymentEl.value}`);
+      cart=[];renderCart();
+    });
+    clearCartBtn.addEventListener('click',()=>{cart=[];renderCart();});
+    renderProducts();renderCart();
+  </script>
+</body>
+</html>
